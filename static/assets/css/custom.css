@@ -1,0 +1,14 @@
+.show_notification {
+    position: fixed;
+    bottom: 100%;
+    right: 20px;
+    animation: backwards;
+}
+
+
+
+.btn {
+    padding: 2px 1.75em !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+}

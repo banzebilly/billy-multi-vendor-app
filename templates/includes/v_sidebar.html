@@ -1,0 +1,13 @@
+
+<div class="user-account-nav user-account-sidebar">
+    <div class="user-nav-list">
+        <ul>
+            <li class="{% if '/acount/vendor_dashboard/' == request.path or '/acount/vendor/' == request.path %}active{% endif %}"><a href="{% url 'vendor_dashboard' %}"><i class="icon-dashboard3"></i>Dashboard</a></li>
+            <li class="{% if '/profile' == request.path  %}active{% endif %}"><a href="{% url 'v_profile' %}"><i class="icon-building"></i>My RESTAURANT</a></li>
+            <li class="{% if '/menu_builder' == request.path  %}active{% endif %}"><a href="{% url 'menu_builder' %}"><i class="icon-menu"></i>MENU BUILDER</a></li>
+           
+            
+            <li><a class="logout-btn" href="{% url 'logout' %}"><i class="icon-log-out"></i>Signout</a></li>
+        </ul>
+    </div>
+</div>
