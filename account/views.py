@@ -104,7 +104,7 @@ def register_vendor(request):
             vendor_name = v_form.cleaned_data['vendor_name']
             vendor.vendor_slug = slugify(vendor_name)+'-'+str(user.id)
             #we do not have user_profile let get it signal will create user profile
-            user_profile = UserProfile.objects.get(user=user)
+            user_profile, created = UserProfile.objects.get_or_create(user=user)
             vendor.user_profile = user_profile
             vendor.save()
 
