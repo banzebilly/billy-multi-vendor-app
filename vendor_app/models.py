@@ -1,16 +1,10 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
-from enum import unique
-from account.models import UserAccount, UserProfile
-# from account.utils import  send_notification
 from datetime import time, date, datetime
-
-# Create your models here.
+from account.models import UserAccount, UserProfile
+from account.utils import send_notification
 
 class Vendor(models.Model):
-    user = models.OneToOneField(UserAccount, related_name='user', on_delete=models.CASCADE,)
+    user = models.OneToOneField(UserAccount, related_name='user', on_delete=models.CASCADE)
     user_profile = models.OneToOneField(UserProfile, related_name='userprofile', on_delete=models.CASCADE)
     vendor_name = models.CharField(max_length=50)
     vendor_license = models.ImageField(upload_to='vendor/license')
@@ -19,68 +13,67 @@ class Vendor(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.vendor_name
+        return f"{self.vendor_name} (ID: {self.id})"
 
     def is_open(self):
-        # Check current day's opening hours.
-        today_date = date.today()
-        today = today_date.isoweekday()
-        
-        current_opening_hours = OpeningHour.objects.filter(vendor=self, day=today)
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
+        """
+        Checks if the vendor is currently open based on opening hours.
+        """
+        today = date.today().isoweekday()  # Get current weekday as an integer
+        now = datetime.now().time()  # Get current time
 
-        is_open = None
-        for i in current_opening_hours:
-            if not i.is_closed:
-                start = str(datetime.strptime(i.from_hour, "%I:%M %p").time())
-                end = str(datetime.strptime(i.to_hour, "%I:%M %p").time())
-                if current_time > start and current_time < end:
-                    is_open = True
-                    break
-                else:
-                    is_open = False
-        return is_open    
-    #the save  function will get tringurd when click on save button on the admin pannel for approving the vendor and send them the message that congrats you restaurant has been registered or not
-   #argument: and keyword argument: are used when you do not know how many parameters this particular save function wil take or accept
+        current_opening_hours = OpeningHour.objects.filter(vendor=self, day=today, is_closed=False)
 
-    # def save(self, *args, **kwargs):
-    #     if self.pk is not None:
-    #         # Update
-    #         orig = Vendor.objects.get(pk=self.pk)
-    #         if not orig.is_approved and self.is_approved:
-    #             mail_template = "acount/email/admin_approval_email.html"
-    #             context = {
-    #                 'user': self.user,
-    #                 'is_approved': self.is_approved,
-    #                 'to_email': self.user.email,  # Include the email address
-    #             }
-    #             mail_subject = "Congratulations! Your restaurant has been approved."
-    #             send_notification(mail_subject, mail_template, context)
-    #         elif orig.is_approved and not self.is_approved:
-    #             mail_template = "acount/email/admin_approval_email.html"
-    #             context = {
-    #                 'user': self.user,
-    #                 'is_approved': self.is_approved,
-    #                 'to_email': self.user.email,  # Include the email address
-    #             }
-    #             mail_subject = "We are sorry, you are not eligible for publishing your food menu on our marketplace."
-    #             send_notification(mail_subject, mail_template, context)
-    #     return super(Vendor, self).save(*args, **kwargs)
+        for opening_hour in current_opening_hours:
+            start_time = datetime.strptime(opening_hour.from_hour, "%I:%M %p").time()
+            end_time = datetime.strptime(opening_hour.to_hour, "%I:%M %p").time()
+            
+            if start_time <= now <= end_time:  # Direct time comparison
+                return True  # Vendor is open
 
+        return False  # Vendor is closed
 
+    def save(self, *args, **kwargs):
+        """
+        Overrides the save method to send notifications when the vendor's approval status changes.
+        If a vendor is newly approved, sends a congratulatory email.
+        If a vendor's approval is revoked, sends a notification email.
+        The save function is triggered when an admin updates the vendor's approval status in the admin panel.
+        *args and **kwargs are used to handle any number of arguments passed to this method.
+        """
+        if self.pk:  # Check if this is an update (not a new object)
+            orig = Vendor.objects.get(pk=self.pk)
+            if orig.is_approved != self.is_approved:  # Trigger only when approval status changes
+                mail_template = "account/email/admin_approval_email.html"
+                mail_subject = (
+                    "Congratulations! Your restaurant has been approved."
+                    if self.is_approved
+                    else "We’re sorry, but you are not eligible to publish your food menu on our marketplace."
+                )
+                context = {
+                    'user': self.user,
+                    'is_approved': self.is_approved,
+                    'to_email': self.user.email,
+                }
+                send_notification(mail_subject, mail_template, context)
+
+        super().save(*args, **kwargs)  # Call the parent class's save method
 
 DAYS = [
-    (1, ("Monday")),
-    (2, ("Tuesday")),
-    (3, ("Wednesday")),
-    (4, ("Thursday")),
-    (5, ("Friday")),
-    (6, ("Saturday")),
-    (7, ("Sunday")),
+    (1, "Monday"),
+    (2, "Tuesday"),
+    (3, "Wednesday"),
+    (4, "Thursday"),
+    (5, "Friday"),
+    (6, "Saturday"),
+    (7, "Sunday"),
 ]
 
-HOUR_OF_DAY_24 = [(time(h, m).strftime('%I:%M %p'), time(h, m).strftime('%I:%M %p')) for h in range(0, 24) for m in (0, 30)]
+HOUR_OF_DAY_24 = [
+    (time(h, m).strftime('%I:%M %p'), time(h, m).strftime('%I:%M %p')) 
+    for h in range(0, 24) for m in (0, 30)
+]
+
 class OpeningHour(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     day = models.IntegerField(choices=DAYS)
@@ -94,4 +87,5 @@ class OpeningHour(models.Model):
 
     def __str__(self):
         return self.get_day_display()
+
    
