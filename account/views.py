@@ -57,9 +57,9 @@ def register_User(request):
             user.save()
 
             #=========================email verification email==================================
-            # mail_subject = 'Please activate your account'
-            # email_template = 'acount/email/account_verification_email.html'
-            send_verification_email(request, user)
+            mail_subject = 'Please activate your account'
+            email_template = 'account/email/account_verification_email.html'
+            send_verification_email(request, user, mail_subject, email_template)
 
             messages.success(request, 'WE HAVE SENT YOU THE LINK INTO YOUR EMAIL ADDRESS TO ACTIVATE YOUR ACCOUNT!')
             return redirect('register_User')
@@ -109,10 +109,9 @@ def register_vendor(request):
             vendor.save()
 
              # ==================Send verification email to vendor user================
-            send_verification_email(request, user)
-            # mail_subject = 'Please activate your account'
-            # email_template = 'acount/email/account_verification_email.html'
-            # send_verification_email(request, user, mail_subject, email_template)
+            mail_subject = 'Please activate your account'
+            email_template = 'account/email/account_verification_email.html'
+            send_verification_email(request, user, mail_subject, email_template)
 
             messages.success(request, 'your account has been registered successfully, Please wait for the approval')
             return redirect('register_vendor')
@@ -158,8 +157,8 @@ def forgot_password(request):
     if request.method == 'POST':
         email = request.POST['email']
 
-        if User.objects.filter(email=email).exists():
-            user = User.objects.get(email__exact=email)
+        if UserAccount.objects.filter(email=email).exists():
+            user = UserAccount.objects.get(email__exact=email)
 
             # send reset password email
             mail_subject = 'Reset Your Password'
@@ -178,8 +177,8 @@ def reset_password_validate(request, uidb64, token):
     # validate the user by decoding the token and user pk
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
-        user = User._default_manager.get(pk=uid)
-    except(TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = UserAccount._default_manager.get(pk=uid)
+    except(TypeError, ValueError, OverflowError, UserAccount.DoesNotExist):
         user = None
 
     if user is not None and default_token_generator.check_token(user, token):
@@ -198,7 +197,7 @@ def reset_password(request):
 
         if password == confirm_password:
             pk = request.session.get('uid')
-            user = User.objects.get(pk=pk)
+            user = UserAccount.objects.get(pk=pk)
             user.set_password(password)
             user.is_active = True
             user.save()
